@@ -32,8 +32,43 @@
           </mu-step-label>
         </mu-step>
       </mu-stepper>
-      <task-list :tasks  = 'tasks'/>
+      <mu-list>
+        <task-list-item 
+          v-for         = 'task of tasks'
+          :task         = 'task'
+          :key          = 'task.title'
+          @request-edit-task = 'edit_task'
+          @editing-task = 'update_task'/>
+      </mu-list>
       <mu-flat-button label='完成' slot='actions' primary @click='commitCreation'/>
+      <mu-dialog 
+        :open = 'editingTask'
+        dialogClass = 'editor-dialog'
+        >
+        <mu-text-field label='标题'/>
+        <mu-select-field label='负责人'>
+          <mu-menu-item value='aa' title = 'aa'/>
+        </mu-select-field>
+        <mu-select-field label='优先级'>
+          <mu-menu-item value='aa' title = 'aa'/>
+        </mu-select-field>
+        <mu-select-field label='严重程度'>
+          <mu-menu-item value='aa' title = 'aa'/>
+        </mu-select-field>
+        <mu-select-field label='风险'>
+          <mu-menu-item value='aa' title = 'aa'/>
+        </mu-select-field>
+        <mu-date-picker 
+          container='inline' 
+          :autoOk='true' 
+          mode='landscape' 
+          label='截止日期'/>
+        <mu-time-picker 
+          container='inline' 
+          mode='landscape' 
+          label='截止时间' 
+          format='24hr'/>
+      </mu-dialog>
     </mu-dialog>
   </div>
 </template>
@@ -119,38 +154,77 @@ import NewTaskDialog from "@/components/bz/dialogs/new-tasks-wizard"
 /**
  *  任务列表组件
  */
-let taskListTemplate = `
-  <mu-list>
-    <mu-list-item v-for="task of tasks" :title="task.title">
-      <div slot='describe' style="
-      display: flex;
-      flex-direction: row;
-      justify-content: space-between;
-      align-items: center;
+let taskListItemTemplate = `
+    <mu-list-item :title="task.title">
+      <div slot='describe' 
+        @click = 'editTask(task)'
+        style="
+        display: flex;
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
       ">
-        <span>负责人:</span>
+        <span>负责人:{{task.assigned}}</span>
         <span>优先级:</span>
         <span>严重程度:</span>
         <span>截止日期:</span>
       </div>
-      <task-list v-if='task.subTasks !== undefined' :tasks = 'task.subTasks'/>
+      <task-list-item 
+        v-for         = 'task of task.subTasks'
+        @editing-task = 'sub_task_edited'
+        @request-edit-task = '(v)=>{buble_event("request-edit-task", v)}'
+        :task         = 'task'
+        :isSubtask    = 'true'
+        :key          = 'task.title'/>
     </mu-list-item>
   </mu-list>
 `.trim();
-let taskList = {
-  template: taskListTemplate,
-  name: 'task-list',
+let taskListItem = {
+  template: taskListItemTemplate,
+  name: 'task-list-item',
   props: {
-    tasks: {
-      type: Array,
+    task: {
+      type: Object,
       require: true,
+    },
+    isSubtask: {
+      default: false,
     },
   },
   data: function()
   {
     return {};
   },
-  computed: {},
+  computed: {
+  },
+  methods: {
+    buble_event: function(ev, val)
+    {
+      this.$emit(ev, val);
+    },
+    editTask: function(task) 
+    {
+      let newTask = {...task};
+      //TODO popup a editor
+      let callback = ((target, task)=>
+      {
+        target.taskEdited(task);
+      }).bind(undefined, this);
+      this.$emit('request-edit-task', {task: newTask, on_done: callback}); 
+    },
+    taskEdited: function(newTask)
+    {
+      this.$emit('editing-task', {origin: this.task, current: newTask});
+    },
+    sub_task_edited: function(val)
+    {
+      let oldTask = val.origin;
+      let newTask = val.current;
+      let current = {...this.task};
+      current.subTasks[this.task.subTasks.indexOf(oldTask)] = newTask;
+      this.$emit('editing-task', {origin: this.task, current: current});
+    },
+  },
 };
 /**
  *
@@ -203,6 +277,7 @@ export default {
       currentState: {},
       dialogClass: 'dialog',
       tasks: taskData,
+      editingTask: false,
     };
   },// end of data
   computed: {
@@ -227,9 +302,23 @@ export default {
     commitCreation: function()
     {
     },
+    edit_task: function(payload) {
+      let task = payload.task;
+      let callback = payload.on_done;
+      this.editingTask = true;
+      // task.assigned = 'hyk';
+      // callback(task);
+    },
+    update_task: function(val) {
+      let curr = [...this.tasks];
+      let task = val.origin;
+      curr[this.tasks.indexOf(task)] = val.current;
+      this.tasks = curr;
+      // row.task = task;
+    },
   },// end of methods
   components: {
-    'task-list': taskList,
+    'task-list-item': taskListItem,
   },//end of components
 }
 </script>
@@ -241,6 +330,10 @@ export default {
 .dialog {
   width: 90vw;
   height: 90vh;
+  max-width: none;
+}
+
+.editor-dialog {
   max-width: none;
 }
 </style>
