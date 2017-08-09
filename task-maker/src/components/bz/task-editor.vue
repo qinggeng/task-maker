@@ -41,6 +41,7 @@
       title='批量新建任务'
       data-name='batch_task_edit_dialog'
       :dialogClass = 'dialogClass'
+      bodyClass = 'dialog-body'
       @close = 'batchCreatingTask = false'
       >
       <mu-stepper :activeStep='currentStep'>
@@ -61,7 +62,12 @@
         fullWidth
         ref = 'batchText'
       />
-      <mu-list v-if = 'currentStep === 1'>
+      <mu-list 
+        v-if = 'currentStep === 1' 
+        style = "
+          flex-grow: 1;
+          overflow-y: auto;
+      ">
         <task-list-item 
           v-for         = 'task of tasks'
           :task         = 'task'
@@ -194,7 +200,7 @@ const config = {
   "priority" : [],
   "severity" : [],
   "status"   : [],
-  "host"     : '192.168.10.34 : 8020',
+  "host"     : '192.168.10.34:8020',
   };
 let j2s = JSON.stringify;
 
@@ -524,6 +530,7 @@ export default {
       .catch((ex)=>
       {
         this.inProgress = false;
+        console.log(ex);
       });
     },
   },// end of methods
@@ -545,6 +552,12 @@ export default {
   width: 90vw;
   height: 90vh;
   max-width: none;
+  display: flex;
+  flex-direction: column;
+}
+.dialog-body {
+  display: flex;
+  flex-direction: column;
 }
 
 .editor-dialog {
