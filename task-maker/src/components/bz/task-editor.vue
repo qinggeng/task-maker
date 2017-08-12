@@ -184,6 +184,15 @@
         <mu-menu-item style='margin-bottom: 10px'>
           <mu-text-field hintText = "站点" v-model = 'config.host' slot = 'title'/>
         </mu-menu-item>
+        <mu-menu-item style='margin-bottom: 10px'>
+          <mu-text-field hintText = "用户名" v-model = 'config.user' slot = 'title'/>
+        </mu-menu-item>
+        <mu-menu-item style='margin-bottom: 10px'>
+          <mu-text-field hintText = "密码" v-model = 'config.password' slot = 'title'/>
+        </mu-menu-item>
+        <mu-menu-item style='margin-bottom: 10px'>
+          <mu-text-field hintText = "API密钥" v-model = 'config.api_sec' slot = 'title'/>
+        </mu-menu-item>
         <mu-menu-item title='刷新Phabricator设置' @click='reload_fab_settings'/>
       </mu-menu>
     </mu-popover>
@@ -194,14 +203,30 @@
 <script>
 "use strict";
 
+try
+{
+  var settings = require('@/store/settings.js').default;
+  console.log(settings)
+}
+catch(ex)
+{
+  var settings = {
+  host     : '192.168.10.34 : 8020',
+  user     : '',
+  password : '',
+  api_sec  : '',
+  };
+}
+
 const config = {
   "users"    : [],
   "projects" : [],
   "priority" : [],
   "severity" : [],
   "status"   : [],
-  "host"     : '192.168.10.34:8020',
+  ...settings,
   };
+
 let j2s = JSON.stringify;
 
 let parseTask = (tstr) => {
@@ -275,6 +300,7 @@ let parseTasks = (tstr) => {
 
 import basic_styles from '@/styles';
 import NewTaskDialog from "@/components/bz/dialogs/new-tasks-wizard"
+
 /**
  *  任务列表组件
  */
@@ -450,6 +476,7 @@ export default {
       fetch('http://' + this.config.host + '/api/task-batch-edit-form', {
         method: 'POST',
         body: j2s(this.tasks),
+        credentials: 'include',
         'content-type': 'applcation/json',
       })
       .then((resp)=>
@@ -485,7 +512,25 @@ export default {
     {
       this.inSettingMode = false;
       this.inProgress = true;
-      fetch('http://' + this.config.host + '/api/users')
+      fetch('http://' + this.config.host + '/api/credentials', {
+        method: 'PUT',
+        credentials: 'include',
+        body: j2s({
+          user: config.user,
+          password: config.password,
+          api_sec: config.api_sec,
+        }),
+        'content-type': 'application/json',
+      })
+      .then(resp => 
+      {
+        if (resp.ok)
+        {
+          return fetch('http://' + this.config.host + '/api/users', {
+            credentials: 'include',
+          });
+        }
+      })
       .then((resp)=>
       {
         if (resp.ok)
@@ -496,7 +541,9 @@ export default {
       .then((users)=>
       {
         this.config.users = users;
-        return fetch('http://' + this.config.host + '/api/projects')
+        return fetch('http://' + this.config.host + '/api/projects', {
+            credentials: 'include',
+          })
       })
       .then((resp)=>
       {
@@ -508,7 +555,9 @@ export default {
       .then((projects)=>
       {
         this.config.projects = projects;
-        return fetch('http://' + this.config.host + '/api/configs')
+        return fetch('http://' + this.config.host + '/api/configs', {
+            credentials: 'include',
+          })
       })
       .then((resp)=>
       {

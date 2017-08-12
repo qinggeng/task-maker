@@ -1,2 +1,3 @@
 *.swp
 *~
+task-maker/src/store/settings.js
