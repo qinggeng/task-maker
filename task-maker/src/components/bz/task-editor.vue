@@ -12,6 +12,7 @@
         mini
         :disabled = 'inProgress'
         icon   = 'search'
+        @click = '()=>{editingSearching = true}'
         :style = 'applied_styles.toolbar.button'/>
       <span style='flex-grow: 1'/>
       <mu-float-button 
@@ -168,6 +169,10 @@
         </div>
       </mu-dialog>
     </mu-dialog>
+    <search-edit-dialog
+      :opening='editingSearching'
+      @request-close='()=>{editingSearching = false}'
+    />
     <!-- end of dialogs -->
     <!-- 
     *********************
@@ -202,31 +207,9 @@
 
 <script>
 "use strict";
+import store from '@/store';
 
-try
-{
-  var settings = require('@/store/settings.js').default;
-  console.log(settings)
-}
-catch(ex)
-{
-  var settings = {
-  host     : '192.168.10.34 : 8020',
-  user     : '',
-  password : '',
-  api_sec  : '',
-  };
-}
-
-const config = {
-  "users"    : [],
-  "projects" : [],
-  "priority" : [],
-  "severity" : [],
-  "status"   : [],
-  ...settings,
-  };
-
+const config = store.state.config;
 let j2s = JSON.stringify;
 
 let parseTask = (tstr) => {
@@ -300,6 +283,7 @@ let parseTasks = (tstr) => {
 
 import basic_styles from '@/styles';
 import NewTaskDialog from "@/components/bz/dialogs/new-tasks-wizard"
+import SearchEditDialog from "@/components/bz/dialogs/search_edit_dialog"
 
 /**
  *  任务列表组件
@@ -442,6 +426,7 @@ export default {
       batchCreatingTask : false,
       inProgress        : false,
       inSettingMode     : false,
+      editingSearching  : true,
     };
   },// end of data
   computed: {
@@ -589,6 +574,7 @@ export default {
   },
   components: {
     'task-list-item': taskListItem,
+    'search-edit-dialog': SearchEditDialog,
   },//end of components
 }
 </script>
