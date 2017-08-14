@@ -2,17 +2,20 @@
   <mu-chip
     showDelete
     class = 'criteria-field'
+    @delete = 'onRequestDeleteCriteria'
   >
     <data-editor
       :raw_data='criteria.operate_on'
       :data_traits='fieldTraits'
       @edited='onFieldChosen'
     />
+    <div style='width: 4px'/>
     <data-editor
       :raw_data='criteria.operator' 
       :data_traits='operatorTraits'
       @edited='onPredictChoosen'
       :current_view='"raw"'/>
+    <div style='width: 4px'/>
     <data-editor 
       :raw_data='criteria.operand' 
       :data_traits='current_field_trait || current_field.field_editors[criteria.operator].data_traits' 
@@ -89,6 +92,11 @@ export default {
 		},
   },//end of computed
   methods    : {
+    onRequestDeleteCriteria: function() 
+    {
+      console.log('onRequestDeleteCriteria');
+      this.$emit("delete-criteria");
+    },
 		onFieldChosen: function(val) {
       if (val.current == val.origin)
       {
@@ -142,8 +150,9 @@ export default {
         current: criteria,
         origin: this.criteria,
       };
-      this.criteria = criteria;
+      // this.criteria = criteria;
       this.$emit('criteria-changed', payload);
+      this.criteria.operand = val.current;
 		},
 
 		makeOperatorTraits: function (val)

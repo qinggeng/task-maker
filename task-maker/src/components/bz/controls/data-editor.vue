@@ -103,11 +103,45 @@ export default {
   components: {
     raw: {
       props: ['display_data'],
-      template: `<span @click='clicked'>{{display_data}}</span>`,
+      template: `
+        <span 
+          @click = 'clicked'
+          style  = '
+            min-width: 20px; 
+            min-height: 16px;
+          '
+        >
+          {{resolved_display_data}}
+        </span>
+
+        <!--
+        <span @click='clicked'>{{display_data}}</span>
+        -->
+      `,
       methods: {
         clicked: function(ev) {
           this.$emit('request-edit');
         }
+      },
+      computed: {
+        resolved_display_data: {
+          get()
+          {
+            if (undefined === this.display_data)
+            {
+              return '';
+            }
+            if (typeof this.display_data !== 'string')
+            {
+              return String(this.display_data);
+            }
+            if (this.display_data.length === 0)
+            {
+              return '';
+            }
+            return this.display_data;
+          },
+        },
       },
     },
     highlighted: {

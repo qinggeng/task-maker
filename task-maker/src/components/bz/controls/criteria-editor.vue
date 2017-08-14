@@ -10,6 +10,7 @@
       :criteria='criteria' 
       @operated-field-changed='(v)=>{operateOnChanged(criteria, v);}'
       :key = 'criterias.indexOf(criteria)'
+      @delete-criteria='((idx, v)=>{deleteCriteria(idx, v);}).bind(criterias.indexOf(criteria))'
     />
   </div>
 </template>
@@ -54,6 +55,10 @@ export default {
     };
   },
 	methods: {
+    deleteCriteria: function(idx, cri)
+    {
+      this.criterias.pop(idx);
+    },
     operateOnChanged: function(cri, val)
     {
       cri.operate_on = val.operate_on;

@@ -46,6 +46,10 @@ const field_criteria_defines = (() => {
         update    : function(val){},
       },
       apply_value: function(val) {
+        if (typeof val !== 'String')
+        {
+          return '';
+        }
         return val;
       },
     };
