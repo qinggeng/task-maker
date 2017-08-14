@@ -3,6 +3,7 @@ import store from '@/store';
 
 const field_criteria_defines = (() => {
 
+  const theStore = store;
   const predicts = {
     get contains() 
     {
@@ -64,6 +65,7 @@ const field_criteria_defines = (() => {
 
   let field_definition_priority = (()=>
   {
+    const store = theStore;
     let field_editors = {};
     field_editors[predicts.belongs_to.key] =
     {

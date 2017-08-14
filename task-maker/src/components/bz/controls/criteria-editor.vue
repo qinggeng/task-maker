@@ -8,15 +8,9 @@
     <criteria-field
       v-for = 'criteria in criterias' 
       :criteria='criteria' 
+      @operated-field-changed='(v)=>{operateOnChanged(criteria, v);}'
+      :key = 'criterias.indexOf(criteria)'
     />
-    <!--
-    <search_criteria 
-      v-for='criteria in criterias' 
-      :applied_styles='applied_styles.criteria' 
-      :criteria='criteria' 
-      @criteria-changed='((c, v)=>{updateCriteria(c, v)}).bind(undefined, criteria)'
-      @request-remove-criteria='removeCriteria'/>
-    -->
   </div>
 </template>
 
@@ -56,11 +50,16 @@ export default {
   data: function() 
   {
     return {
-      current_field_trait: 0,
       criterias: [],
     };
   },
 	methods: {
+    operateOnChanged: function(cri, val)
+    {
+      cri.operate_on = val.operate_on;
+      cri.operator   = val.operator;
+      cri.oprand     = val.operand;
+    },
 		fieldDisplay: function (val) 
 		{
 			try
@@ -85,32 +84,6 @@ export default {
 			}
 		},
 
-		makeOperatorTraits: function (val)
-		{
-			return {
-				edit_type: 'choice',
-        editable: true,
-				choices: val.map(x=>{return {val: x.key, display: x.display};}),
-			};
-		},
-
-
-		onCriteriaChanged: function (val)
-    {
-      if (val.current == val.origin)
-      {
-        return;
-      }
-			const criteria = extend(this.criteria);
-			//TODO send change message
-			criteria.operand = val.current; 
-      let payload = {
-        current: criteria,
-        origin: this.criteria,
-      };
-      this.criteria = criteria;
-      this.$emit('criteria-changed', payload);
-		},
 
 		requestRemoveCriteria: function (ev) 
     {
@@ -127,25 +100,6 @@ export default {
 	},// end of methods
 
 	computed: {
-		current_field: {
-			cache: false,
-			get() {
-				return this.field_map[this.criteria.operate_on];
-			},
-		},
-		current_predict: {
-			cache: false,
-			get() {
-				return this.field_map[this.criteria.operate_on].available_predicts.filter(x => x.key == this.criteria.operator)[0];
-			},
-		},
-		operator_traits: {
-			cache: false,
-			get() {
-				let predict = this.field_map[this.criteria.operate_on].available_predicts;
-				return this.makeOperatorTraits(predict);
-			},
-		},
     applied_styles: {
       get() {
         return {...default_styles};

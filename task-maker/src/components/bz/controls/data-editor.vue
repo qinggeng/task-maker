@@ -58,12 +58,19 @@ var typedAccessors = {
 export default {
   props: {
     'raw_data'     : {},
-    'current_view' : {
+    'initial_view' : {
       type: String,
       default: ()=>'raw',
     },
     'data_traits'  : {},
   }, // end of props
+
+  data: function()
+  {
+    return {
+      current_view: 'raw',
+    };
+  }, // end of data
 
   methods: {
     formatVal(val, traits)
@@ -79,7 +86,6 @@ export default {
       return val;
     },
     onRequestEdit: function(ev, args) {
-      console.log(JSON.stringify(this.data_traits));
       if (undefined != this.data_traits.editable 
           && this.data_traits.editable === true)
       {
@@ -89,7 +95,7 @@ export default {
     onEdited: function(args) {
       this.$emit('edited', {current: args, orig: this.raw_data});
       var val = args;
-      this.raw_data = val;
+      // this.raw_data = val;
       this.display_data = this.formatVal(val, this.data_traits);
       this.current_view = 'raw';
     },
@@ -126,39 +132,77 @@ export default {
       mounted: function(el) {
         this.$el.focus();
       },
+      created: function()
+      {
+        this.selection = this.raw_data;
+      },
+      data: function()
+      {
+        return {
+          selection: '',
+        };
+      },
       methods: {
-        onBlur: function(ev) {
-          this.$emit('edited', this.$el.value);
+        onChange: function(val) {
+          this.$emit('edited', val);
+        },
+        onClose: function(val) {
+          this.$emit('edited', this.selection);
         },
       },
       template: `
-        <select @blur='onBlur' :value='raw_data'>
-        <option v-for = 'opt of data_traits.choices' :value='opt.val'>{{opt.display}}</oitpion>
-        </select>`,
+        <mu-select-field 
+          :value  = 'raw_data'
+          @close  = 'onClose'
+          @change = 'onChange'
+        >
+          <mu-menu-item 
+            v-for = 'opt of data_traits.choices'
+            :value = 'opt.val'
+            :title = 'opt.display'
+            :key = 'opt.val'
+          />
+        </mu-select-field>
+        `,
     },
     multiple_choice: {
       props: ['display_data', 'raw_data', 'data_traits'],
       mounted: function(el) {
         this.$el.focus();
       },
+      created: function() {
+        this.the_selection = [...this.raw_data];
+      },
+      data: function () 
+      {
+        return {
+          the_selection: [],
+        };
+      },
       methods: {
-        onBlur: function(ev) {
-          var opts = this.$el.options;
-          var value = [];
-          for (var opt of opts)
-          {
-            if (opt.selected)
-            {
-              value.push(opt.value);
-            }
-          }
-          this.$emit('edited', value);
-        },
+        onClose: function(val) {
+          this.$emit('edited', this.the_selection);
+        }
       },
       template: `
+        <mu-select-field 
+          v-model = 'the_selection'
+          @close = 'onClose'
+          multiple
+        >
+          <mu-menu-item 
+            v-for   = 'opt of data_traits.choices'
+            :value  = 'opt.val'
+            :title  = 'opt.display'
+            :key    = 'opt.val'
+          />
+        </mu-select-field>
+        <!--
         <select @blur='onBlur' multiple='multiple'>
         <option v-for = 'opt of data_traits.choices' :value='opt.val' :selected='raw_data.indexOf(opt.val) != -1'>{{opt.display}}</oitpion>
-        </select>`,
+        </select>
+        -->
+        `,
     },
     datetime: {
       props: ['display_data', 'data_traits'],
@@ -194,7 +238,6 @@ export default {
 
   created: function()
   {
-    console.log('data-editor created');
   },
 }
 

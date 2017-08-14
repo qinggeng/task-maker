@@ -6,18 +6,19 @@
     <data-editor
       :raw_data='criteria.operate_on'
       :data_traits='fieldTraits'
-      @edited='onFieldChosen'/>
-    <!--
-    <div :style='applied_styles.field'>
-      {{this.criteria.operate_on}}
-    </div>
-    <div :style='applied_styles.predict'>
-      {{this.criteria.operator}}
-    </div>
-    <div :style='applied_styles.param'>
-      {{this.criteria.operand}}
-    </div>
-    -->
+      @edited='onFieldChosen'
+    />
+    <data-editor
+      :raw_data='criteria.operator' 
+      :data_traits='operatorTraits'
+      @edited='onPredictChoosen'
+      :current_view='"raw"'/>
+    <data-editor 
+      :raw_data='criteria.operand' 
+      :data_traits='current_field_trait || current_field.field_editors[criteria.operator].data_traits' 
+      :current_view='"raw"' 
+      @edited='onCriteriaChanged'
+    />
   </mu-chip>
 </template>
 
@@ -58,6 +59,7 @@ export default {
   {
     return {
       fieldTraits: fieldTraits,
+      current_field_trait: 0,
     };
   },//end of data
   computed   : {
@@ -67,6 +69,24 @@ export default {
         return {...default_styles};
       }
     },
+		current_field: {
+			cache: false,
+			get() {
+				return this.field_map[this.criteria.operate_on];
+			},
+		},
+		current_predict: {
+			cache: false,
+			get() {
+				return this.field_map[this.criteria.operate_on].available_predicts.filter(x => x.key == this.criteria.operator)[0];
+			},
+		},
+		operatorTraits: {
+			get() {
+				let predict = this.field_map[this.criteria.operate_on].available_predicts;
+				return this.makeOperatorTraits(predict);
+			},
+		},
   },//end of computed
   methods    : {
 		onFieldChosen: function(val) {
@@ -74,7 +94,7 @@ export default {
       {
         return;
       }
-			const criteria = this.criteria;
+			const criteria = {...this.criteria};
 			//TODO send change message
 			criteria.operate_on = val.current;
 			let fieldDefine = this.field_map[val.current];
@@ -95,6 +115,7 @@ export default {
       {
         criteria.operand = fieldDefine.applyValue(criteria.operand);
       }
+      this.$emit('operated-field-changed', criteria);
 		},
 
 		onPredictChoosen: function(val) 
@@ -108,6 +129,32 @@ export default {
           fieldDefine.field_editors[val.current].apply_value(this.criteria.operand);
       }
 		},
+
+		onCriteriaChanged: function (val)
+    {
+      if (val.current == val.origin)
+      {
+        return;
+      }
+			const criteria = {...this.criteria};
+			criteria.operand = val.current; 
+      let payload = {
+        current: criteria,
+        origin: this.criteria,
+      };
+      this.criteria = criteria;
+      this.$emit('criteria-changed', payload);
+		},
+
+		makeOperatorTraits: function (val)
+		{
+			return {
+				edit_type: 'choice',
+        editable: true,
+				choices: val.map(x=>{return {val: x.key, display: x.display};}),
+			};
+		},
+
   },//end of methods
 
   components : {
