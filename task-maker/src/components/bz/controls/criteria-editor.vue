@@ -23,7 +23,7 @@
 <script>
 "use strict";
 
-import defines from '@/consts/bz/criteria_defines.js'
+import defines       from '@/consts/bz/criteria_defines.js'
 import CriteriaField from '@/components/bz/controls/criteria-field'
 const criteriaDefines = defines.criteriaDefines;
 
@@ -94,33 +94,6 @@ export default {
 			};
 		},
 
-		onFieldChosen: function(val) {
-      if (val.current == val.origin)
-      {
-        return;
-      }
-			const criteria = this.criteria;
-			//TODO send change message
-			criteria.operate_on = val.current;
-			let fieldDefine = this.field_map[val.current];
-			let available_predicts = fieldDefine.available_predicts;
-			let predict = available_predicts[0];
-			if (undefined === predict)
-			{
-				criteria.operator = '';
-				return;
-			}
-			criteria.operator = predict.key;
-      if (undefined !== fieldDefine.field_editors)
-      {
-        criteria.operand = 
-          fieldDefine.field_editors[predict.key].apply_value(criteria.operand);
-      }
-      else
-      {
-        criteria.operand = fieldDefine.applyValue(criteria.operand);
-      }
-		},
 
 		onCriteriaChanged: function (val)
     {
@@ -142,18 +115,6 @@ export default {
 		requestRemoveCriteria: function (ev) 
     {
 			this.$emit('request-remove-criteria', this.criteria);
-		},
-
-		onPredictChoosen: function(val) 
-    {
-			this.criteria.operator = val.current;
-			let fieldDefine = this.current_field;
-      if (undefined !== fieldDefine.field_editors)
-      {
-        this.current_field_trait = fieldDefine.field_editors[val.current].data_traits;
-        this.criteria.operand = 
-          fieldDefine.field_editors[val.current].apply_value(this.criteria.operand);
-      }
 		},
 
     onNewCriteria: function() 
