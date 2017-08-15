@@ -10,7 +10,7 @@
       :criteria='criteria' 
       @operated-field-changed='(v)=>{operateOnChanged(criteria, v);}'
       :key = 'criterias.indexOf(criteria)'
-      @delete-criteria='((idx, v)=>{deleteCriteria(idx, v);}).bind(criterias.indexOf(criteria))'
+      @delete-criteria='((idx, v)=>{deleteCriteria(idx, v);}).bind(undefined, criterias.indexOf(criteria))'
     />
   </div>
 </template>
@@ -24,6 +24,7 @@ const criteriaDefines = defines.criteriaDefines;
 
 const default_styles = {
   container: {
+    flexGrow: 1,
     display: 'flex',
     alignItems: 'center',
     flexWrap: 'wrap',
@@ -51,13 +52,19 @@ export default {
   data: function() 
   {
     return {
-      criterias: [],
+      criterias: [
+        {operator: 'belongs_to', operate_on: 'status', operand: ['open', 'start']},
+        {operator: 'higher_than', operate_on: 'priority', operand: '90'},
+        // {operator: '', operate_on: '', operand: },
+      ],
     };
   },
 	methods: {
     deleteCriteria: function(idx, cri)
     {
-      this.criterias.pop(idx);
+      console.log(idx);
+      console.log(cri);
+      this.criterias = this.criterias.filter(x=> x !== this.criterias[idx])
     },
     operateOnChanged: function(cri, val)
     {
@@ -98,7 +105,7 @@ export default {
     onNewCriteria: function() 
     {
       let newCriterias = [...this.criterias];
-      newCriterias.splice(0, 0, {operator: 'contains', operand:'XXX', operate_on: 'title'});
+      newCriterias.splice(0, 0, {operator: 'higher_than', operand:90, operate_on: 'priority'});
       this.criterias = newCriterias;
       
     },

@@ -113,10 +113,6 @@ export default {
         >
           {{resolved_display_data}}
         </span>
-
-        <!--
-        <span @click='clicked'>{{display_data}}</span>
-        -->
       `,
       methods: {
         clicked: function(ev) {
@@ -151,15 +147,38 @@ export default {
     textEdit: {
       props: ['display_data'],
       mounted: function(el) {
+        this.value = this.display_data;
         this.$el.focus();
-        this.$el.select();
+        const e = new XPathEvaluator();
+        const expr = e.createExpression('.//input');
+        try
+        {
+          const input = expr.evaluate(this.$el).iterateNext();
+          input.select();
+        }
+        catch(ex)
+        {
+        }
+        // this.$el.select();
+      },
+      data: function()
+      {
+        return {
+          value: '',
+        };
       },
       methods: {
         onBlur: function(ev) {
-          this.$emit('edited', this.$el.value);
+          // this.$emit('edited', this.$el.value);
+          this.$emit('edited', this.value);
         },
       },
-      template: `<input type = "text" :value='display_data' @blur='onBlur'/>`,
+      template: `
+        <mu-text-field v-model='value' @blur = 'onBlur'/>
+        <!--
+        <input type = "text" :value='display_data' @blur='onBlur'/>
+        -->
+      `,
     },
     choice: {
       props: ['display_data', 'raw_data', 'data_traits'],

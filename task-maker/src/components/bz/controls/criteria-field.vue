@@ -95,7 +95,7 @@ export default {
     onRequestDeleteCriteria: function() 
     {
       console.log('onRequestDeleteCriteria');
-      this.$emit("delete-criteria");
+      this.$emit("delete-criteria", this.criteria);
     },
 		onFieldChosen: function(val) {
       if (val.current == val.origin)

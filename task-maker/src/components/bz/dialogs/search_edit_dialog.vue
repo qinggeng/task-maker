@@ -1,5 +1,6 @@
 <template>
   <mu-dialog 
+    scrollable
     :open       = 'opening'
     title       = '搜索任务'
     data-name   = 'search-edit-dialog'
@@ -7,7 +8,41 @@
     bodyClass   = 'search-edit-dialog-body-class'
     @close      = 'closeHandler'
   >
-    <criteria-editor/>
+   <div style="height: 20px"/>
+   <div>
+    <mu-float-button
+      mini
+      disabled
+      icon = 'folder_open'
+    />
+    <mu-float-button
+      mini
+      disabled
+      icon = 'save'
+    />
+    <mu-float-button
+      mini
+      disabled
+      icon = 'undo'
+    />
+    <mu-float-button
+      mini
+      disabled
+      icon = 'redo'
+    />
+   </div>
+   <div style="height: 20px"/>
+   <div>
+    <criteria-editor 
+      ref="editor"
+    />
+   </div>
+   <mu-raised-button 
+     primary 
+     label="搜索" 
+     slot="actions"
+     @click="doSearch"
+   />
   </mu-dialog>
 </template>
 
@@ -33,6 +68,10 @@ export default {
     {
       this.$emit('request-close', {});
     },
+    doSearch: function()
+    {
+      this.$emit('request-search', this.$refs.editor.criterias);
+    },
   },// end of methods
   computed: {
   },// end of computed
@@ -55,6 +94,8 @@ export default {
 }
 .search-edit-dialog-body-class {
   display: flex;
+  flex-grow: 1;
+  justify-contents: flex-start;
   flex-direction: column;
 }
 </style>

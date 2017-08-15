@@ -24,11 +24,51 @@
         @click = 'pop_settings'/>
       <span style='width: 20px'/>
     </div>
-    <div :style='applied_styles.editor_content' data-name='editor-content'>
+    <div 
+      :style='applied_styles.editor_content' 
+      data-name='editor-content'
+    >
+      <mu-table
+        ref = 'taskTable'
+      >
+        <mu-thead>
+          <mu-tr
+          >
+            <mu-th
+              v-for = 'column in column_settings'
+              :key = 'column.value'
+            >
+              {{column.value}}
+            </mu-th>
+          </mu-tr>
+        </mu-thead>
+        <mu-tbody>
+          <mu-tr
+            v-for = 'task in tasks'
+            key = 'tasks.indexOf(task)'
+          >
+            <mu-td
+              v-for = 'column in column_settings'
+              :key = 'column.value'
+              style = '
+                white-space: unset;
+              '
+            >
+              <data-editor
+                :raw_data='access(task, column)'
+                :data_traits='column'
+                @edited = '((r, c, v)=>{onEdited(r, c, v)}).bind(undefined, task, column)'
+              />
+            </mu-td>
+          </mu-tr>
+        </mu-tbody>
+      </mu-table>
+      <!--
       <div :style='applied_styles.task_list_frame' data-name='task_list_frame'>
       </div>
       <div :style='applied_styles.task_detail_frame' data-name='task_detail_frame'>
       </div>
+      -->
     </div>
     <!-- 
     *******************
@@ -172,6 +212,7 @@
     <search-edit-dialog
       :opening='editingSearching'
       @request-close='()=>{editingSearching = false}'
+      @request-search = 'doSearch'
     />
     <!-- end of dialogs -->
     <!-- 
@@ -207,7 +248,10 @@
 
 <script>
 "use strict";
-import store from '@/store';
+
+import store           from '@/store';
+import column_settings from '@/store/default_column_settings';
+import DataEditor      from '@/components/bz/controls/data-editor'
 
 const config = store.state.config;
 let j2s = JSON.stringify;
@@ -284,6 +328,90 @@ let parseTasks = (tstr) => {
 import basic_styles from '@/styles';
 import NewTaskDialog from "@/components/bz/dialogs/new-tasks-wizard"
 import SearchEditDialog from "@/components/bz/dialogs/search_edit_dialog"
+
+const buildConstraints = (criterias) => 
+{
+  let sortedPriority = 
+    store.state.config.priority.sort((x, y) => { return x < y});
+  let fieldConstraintMakers = {
+    priority:{
+      higher_than: ((priority, val)=>
+      {
+        return {
+          key: 'priorities', 
+          val: priority.filter(x => x.val > val).map(x => x.val),
+        };
+      }).bind(undefined, sortedPriority),
+      lower_than: ((priority, val)=>
+      {
+        return {
+          key: 'priorities', 
+          val: priority.filter(x => x.val < val).map(x => x.val),
+        };
+      }).bind(undefined, sortedPriority),
+      belongs_to: ((val)=>
+      {
+        return {
+          key: 'priorities', 
+          val: val,
+        };
+      }),
+    },
+    project: {
+      belongs_to: ((val)=>
+      {
+        return {
+          key: 'projects', 
+          val: val,
+        };
+      }),
+    },
+    author: {
+      belongs_to: ((val)=>
+      {
+        return {
+          key: 'authorPHIDs', 
+          val: val,
+        };
+      }),
+    },
+    assigned: {
+      belongs_to: ((val)=>
+      {
+        return {
+          key: 'assigned', 
+          val: val,
+        };
+      }),
+    },
+    status: {
+      belongs_to: ((val)=>
+      {
+        return {
+          key: 'statuses', 
+          val: val,
+        };
+      }),
+    },
+  };
+
+  let constraints = {};
+
+  for (let criteria of criterias)
+  {
+    try
+    {
+      let fieldConstraint =
+        fieldConstraintMakers[criteria.operate_on][criteria.operator](criteria.operand);
+      constraints[fieldConstraint.key] = fieldConstraint.val;
+    }
+    catch(ex)
+    {
+      console.log(ex.message);
+    }
+  }
+  return {constraints};
+};// end of buildConstraints
 
 /**
  *  任务列表组件
@@ -386,6 +514,7 @@ const default_styles = {
   },
   editor_content: {
     ...basic_styles.h_container,
+    alignItems: 'unset',
     justifyContent: 'flex-start',
     flexGrow: 1,
   },
@@ -426,7 +555,8 @@ export default {
       batchCreatingTask : false,
       inProgress        : false,
       inSettingMode     : false,
-      editingSearching  : true,
+      editingSearching  : false,
+      column_settings   : column_settings,
     };
   },// end of data
   computed: {
@@ -440,6 +570,89 @@ export default {
     }
   },// end of computed
   methods: {
+    onEdited: function(row, column, args)
+    {
+      try
+      {
+        column.update(row, args.current);
+      }
+      catch(ex)
+      {
+        let printVar = (x)=>
+        {
+          for (var key of Object.keys(x))
+          {
+            console.log(`${key}: ${JSON.stringify(x)}`);
+          }
+        }
+        printVar({row, column, args});
+        console.log(ex.message);
+      }
+    },
+    access: function(row, column)
+    {
+      try
+      {
+        var accessor = column.accessor;
+        if (typeof(accessor) === 'string')
+        {
+          return row[accessor];
+        }
+        if (typeof(accessor) === 'function')
+        {
+          return accessor(row, column);
+        }
+      }
+      catch(ex)
+      {
+        console.log(column);
+        console.log(row);
+        return ex.message;
+      }
+    },
+    doSearch: function(cri)
+    {
+      const constraints = buildConstraints(cri);
+      this.editingSearching = false;
+      this.inProgress = true;
+      fetch('http://' + this.config.host + '/api/search', {
+        method: 'POST',
+        body: j2s(constraints),
+        credentials: 'include',
+        'content-type': 'applcation/json',
+      })
+      .then((resp)=>
+      {
+        if (resp.ok)
+        {
+          return resp.text();
+        }
+        throw new 'can not get search result';
+      })
+      .then(ids=>
+      {
+        return fetch('http://' + this.config.host + '/api/id2j?ids=' + ids.trim(), {
+          credentials: 'include',
+        });
+      })
+      .then(resp=>
+      {
+        if (resp.ok)
+        {
+          return resp.json();
+        }
+        throw new 'can not get search details';
+      })
+      .then(tasks=>
+      {
+        this.inProgress = false;
+        this.tasks = tasks;
+      })
+      .catch(ex => 
+      {
+        this.inProgress = false;
+      });
+    },
     pop_settings: function()
     {
       this.inSettingMode = true;
@@ -575,6 +788,7 @@ export default {
   components: {
     'task-list-item': taskListItem,
     'search-edit-dialog': SearchEditDialog,
+    'data-editor': DataEditor,
   },//end of components
 }
 </script>
