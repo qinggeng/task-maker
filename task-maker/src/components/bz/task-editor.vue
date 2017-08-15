@@ -14,6 +14,21 @@
         icon   = 'search'
         @click = '()=>{editingSearching = true}'
         :style = 'applied_styles.toolbar.button'/>
+      <mu-float-button 
+        mini
+        :disabled = 'inProgress || this.tasks.length == 0'
+        icon   = 'refresh'
+        :style = 'applied_styles.toolbar.button'/>
+      <mu-float-button 
+        mini
+        :disabled = 'inProgress || this.tasks.length == 0'
+        icon   = 'file_download'
+        :style = 'applied_styles.toolbar.button'/>
+      <mu-float-button 
+        mini
+        :disabled = 'inProgress'
+        icon   = 'save'
+        :style = 'applied_styles.toolbar.button'/>
       <span style='flex-grow: 1'/>
       <mu-float-button 
         mini 
@@ -69,6 +84,30 @@
       <div :style='applied_styles.task_detail_frame' data-name='task_detail_frame'>
       </div>
       -->
+    </div>
+    <div
+      data-name = 'status-bar-wrapper'
+      style = '
+        height: 24px;
+        align-self: stretch;
+      '
+    >
+      <div 
+        data-name = 'status-bar'
+        style = '
+          display: flex;
+          justify-content: flex-start;
+          align-items: center;
+        '
+      >
+        <div 
+          style='width: 8px'
+        />
+        <span
+        >
+          {{statusHint}}
+        </span>
+      </div>
     </div>
     <!-- 
     *******************
@@ -517,6 +556,7 @@ const default_styles = {
     alignItems: 'unset',
     justifyContent: 'flex-start',
     flexGrow: 1,
+    overflow: 'auto',
   },
   task_list_frame: {
     ...basic_styles.v_container,
@@ -557,6 +597,7 @@ export default {
       inSettingMode     : false,
       editingSearching  : false,
       column_settings   : column_settings,
+      statusHint        : '',
     };
   },// end of data
   computed: {
@@ -615,6 +656,7 @@ export default {
       const constraints = buildConstraints(cri);
       this.editingSearching = false;
       this.inProgress = true;
+      this.statusHint = "搜索中...";
       fetch('http://' + this.config.host + '/api/search', {
         method: 'POST',
         body: j2s(constraints),
@@ -627,10 +669,13 @@ export default {
         {
           return resp.text();
         }
+        this.statusHint = "";
+        this.inProgress = false;
         throw new 'can not get search result';
       })
       .then(ids=>
       {
+        this.statusHint = "获取任务细节...";
         return fetch('http://' + this.config.host + '/api/id2j?ids=' + ids.trim(), {
           credentials: 'include',
         });
@@ -641,15 +686,19 @@ export default {
         {
           return resp.json();
         }
+        this.statusHint = "";
+        this.inProgress = false;
         throw new 'can not get search details';
       })
       .then(tasks=>
       {
         this.inProgress = false;
         this.tasks = tasks;
+        this.statusHint = `共计${tasks.length}个任务`;
       })
       .catch(ex => 
       {
+        this.statusHint = "";
         this.inProgress = false;
       });
     },
