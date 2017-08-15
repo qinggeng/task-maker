@@ -456,7 +456,10 @@ const buildConstraints = (criterias) =>
  *  任务列表组件
  */
 let taskListItemTemplate = `
-    <mu-list-item :title="task.task">
+    <mu-list-item 
+      :title="task.task"
+      :toggleNested='task.subTasks && task.subTasks.length > 0'
+    >
       <div slot='describe' 
         @click = 'editTask(task)'
         style="
@@ -476,6 +479,7 @@ let taskListItemTemplate = `
       </div>
       <task-list-item 
         v-for         = 'task of task.subTasks'
+        slot = 'nested'
         @editing-task = 'sub_task_edited'
         @request-edit-task = '(v)=>{buble_event("request-edit-task", v)}'
         :task         = 'task'
