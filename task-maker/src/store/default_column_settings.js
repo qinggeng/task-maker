@@ -1,6 +1,50 @@
 "use strict";
 import utils from '@/utils';
 import store from '@/store';
+const TidRefCell = {
+  props: ['display_data'],
+  template: `
+    <span 
+      @click = 'clicked'
+      style  = '
+        min-width: 20px; 
+        min-height: 16px;
+      '
+    >
+     <a 
+       target = '_blank'
+       :href = '"http://192.168.10.240:9080/T" + resolved_display_data'
+     >
+       T{{resolved_display_data}}
+     </a>
+    </span>
+  `,
+  methods: {
+    clicked: function(ev) {
+      this.$emit('request-edit');
+    }
+  },
+  computed: {
+    resolved_display_data: {
+      get()
+      {
+        if (undefined === this.display_data)
+        {
+          return '';
+        }
+        if (typeof this.display_data !== 'string')
+        {
+          return String(this.display_data);
+        }
+        if (this.display_data.length === 0)
+        {
+          return '';
+        }
+        return this.display_data;
+      },
+    },
+  },
+};// end of TidRefCell
 let fab_column_settings = (()=>
 {
   let tidColumn = {
@@ -8,6 +52,7 @@ let fab_column_settings = (()=>
     accessor  : 'tid',
     editable  : false,
     edit_type : 'textEdit',
+    editors : {raw: TidRefCell},
   };
   let titleColumn = {
     value          : '标题',

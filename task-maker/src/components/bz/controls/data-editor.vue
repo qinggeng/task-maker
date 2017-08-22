@@ -25,11 +25,14 @@ var typedAccessors = {
     }
     return val;
   },
+
   textEdit: (val, traits)=>{return val},
+
   multiple_choice: (val, traits)=> {
     var choices = traits.choices.reduce((x, y)=>{x[y.val]=y.display; return x}, {});
     return val.map(x=> choices[x]).join(', ');
   },
+
   datetime: (val, traits) =>{
     if(val === 'TBD')
     {

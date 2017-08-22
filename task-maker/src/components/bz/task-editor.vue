@@ -78,6 +78,7 @@
               <data-editor
                 :raw_data='access(task, column)'
                 :data_traits='column'
+                :user_defined_editors = 'column.editors'
                 @edited = '((r, c, v)=>{onEdited(r, c, v)}).bind(undefined, task, column)'
               />
             </mu-td>
