@@ -1,4 +1,5 @@
 "use strict";
+import utils from '@/utils';
 import store from '@/store';
 let fab_column_settings = (()=>
 {
@@ -170,12 +171,12 @@ let fab_column_settings = (()=>
     accessor: function (row, traits) {
       try
       {
-        let dt = strptime(row.deadline,  "%Y-%m-%d %H:%M");
+        let dt = utils.strptime(row.deadline,  "%Y-%m-%d %H:%M");
         let t = dt.getTime();
         let lt = t - dt.getTimezoneOffset() * 60 * 1000;
         dt.setTime(lt);
         // dt.setHours(dt.getHours() + dt.getTimezoneOffset() /  60);
-        return strftime(dt, "%Y-%m-%d %H:%M");
+        return utils.strftime(dt, "%Y-%m-%d %H:%M");
       }
       catch(ex)
       {
@@ -194,9 +195,9 @@ let fab_column_settings = (()=>
           throw 'TBD';
         }
         let dt = new Date(val);
-          let lt = dt.getTime();
-          let t = lt + dt.getTimezoneOffset() * 60 * 1000;
-          dt.setTime(t);
+        let lt = dt.getTime();
+        let t = lt + dt.getTimezoneOffset() * 60 * 1000;
+        dt.setTime(t);
         row.deadline = strftime(dt, "%Y-%m-%d %H:%M");
       }
       catch(ex)

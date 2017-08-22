@@ -43,12 +43,19 @@
      slot="actions"
      @click="doSearch"
    />
+   <mu-raised-button 
+     primary 
+     label="搜索并导出" 
+     slot="actions"
+     @click="doSearchAndSave"
+   />
   </mu-dialog>
 </template>
 
 <script>
 "use strict";
-import CriteriaEditor from '@/components/bz/controls/criteria-editor'
+import CriteriaEditor from '@/components/bz/controls/criteria-editor';
+import utils from '@/utils';
 export default {
   components: {
     'criteria-editor': CriteriaEditor,
@@ -71,6 +78,10 @@ export default {
     doSearch: function()
     {
       this.$emit('request-search', this.$refs.editor.criterias);
+    },
+    doSearchAndSave: function()
+    {
+      this.$emit('request-search-and-save', this.$refs.editor.criterias);
     },
   },// end of methods
   computed: {

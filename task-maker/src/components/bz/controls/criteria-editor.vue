@@ -70,7 +70,7 @@ export default {
     {
       cri.operate_on = val.operate_on;
       cri.operator   = val.operator;
-      cri.oprand     = val.operand;
+      cri.operand    = val.operand;
     },
 		fieldDisplay: function (val) 
 		{

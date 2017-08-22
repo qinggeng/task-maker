@@ -4,28 +4,34 @@
     <div :style='applied_styles.editor_toolbar' data-name='editor-toolbar'>
       <mu-float-button 
         mini
+        data-name = 'btn-create-tasks'
         :disabled = 'inProgress'
         icon      = 'add'
         :style    = 'applied_styles.toolbar.button'
         @click    = 'batch_add_task'/>
       <mu-float-button 
         mini
+        data-name = 'btn-search-tasks'
         :disabled = 'inProgress'
         icon   = 'search'
         @click = '()=>{editingSearching = true}'
         :style = 'applied_styles.toolbar.button'/>
       <mu-float-button 
         mini
+        data-name = 'btn-reload-search'
         :disabled = 'inProgress || this.tasks.length == 0'
         icon   = 'refresh'
         :style = 'applied_styles.toolbar.button'/>
       <mu-float-button 
         mini
+        data-name = 'btn-export-excel'
         :disabled = 'inProgress || this.tasks.length == 0'
         icon   = 'file_download'
+        @click = 'export_excel'
         :style = 'applied_styles.toolbar.button'/>
       <mu-float-button 
         mini
+        data-name = 'save-changes'
         :disabled = 'inProgress'
         icon   = 'save'
         :style = 'applied_styles.toolbar.button'/>
@@ -252,6 +258,7 @@
       :opening='editingSearching'
       @request-close='()=>{editingSearching = false}'
       @request-search = 'doSearch'
+      @request-search-and-save = 'doSearchAndExport'
     />
     <!-- end of dialogs -->
     <!-- 
@@ -291,6 +298,8 @@
 import store           from '@/store';
 import column_settings from '@/store/default_column_settings';
 import DataEditor      from '@/components/bz/controls/data-editor'
+import utils           from '@/utils';
+import FileSaver       from 'file-saver';
 
 const config = store.state.config;
 let j2s = JSON.stringify;
@@ -364,8 +373,8 @@ let parseTasks = (tstr) => {
 
 
 
-import basic_styles from '@/styles';
-import NewTaskDialog from "@/components/bz/dialogs/new-tasks-wizard"
+import basic_styles     from '@/styles';
+import NewTaskDialog    from "@/components/bz/dialogs/new-tasks-wizard"
 import SearchEditDialog from "@/components/bz/dialogs/search_edit_dialog"
 
 const buildConstraints = (criterias) => 
@@ -431,6 +440,42 @@ const buildConstraints = (criterias) =>
           val: val,
         };
       }),
+    },
+    modified: {
+      not_later_than: (val)=>
+      {
+        val = new Date(val);
+        return {
+          key: 'modifiedEnd',
+          val: val.getTime() / 1000,
+        };
+      },
+      not_earlier_than: (val)=>
+      {
+        val = new Date(val);
+        return {
+          key: 'modifiedStart',
+          val: val.getTime() / 1000,
+        };
+      },
+    },
+    created: {
+      not_later_than: (val)=>
+      {
+        val = new Date(val);
+        return {
+          key: 'createdEnd',
+          val: val.getTime() / 1000,
+        };
+      },
+      not_earlier_than: (val)=>
+      {
+        val = new Date(val);
+        return {
+          key: 'createdStart',
+          val: val.getTime() / 1000,
+        };
+      },
     },
   };
 
@@ -592,6 +637,7 @@ export default {
       currentState      : {},
       dialogClass       : 'dialog',
       tasks             : [],
+      original_tasks    : [],
       editingTask       : false,
       config            : config,
       editTarget        : {},
@@ -655,6 +701,53 @@ export default {
         return ex.message;
       }
     },
+
+    doSearchAndExport: function(cri)
+    {
+      const constraints = buildConstraints(cri);
+      this.editingSearching = false;
+      this.inProgress = true;
+      this.statusHint = "搜索中...";
+      fetch('http://' + this.config.host + '/api/search', {
+        method: 'POST',
+        body: j2s(constraints),
+        credentials: 'include',
+        'content-type': 'applcation/json',
+      })
+      .then((resp)=>
+      {
+        if (resp.ok)
+        {
+          return resp.text();
+        }
+        this.statusHint = "";
+        this.inProgress = false;
+        throw new 'can not get search result';
+      })
+      .then((ids)=>
+      {
+        return fetch('http://' + this.config.host + '/api/t2x?ids=' + ids, {
+          credentials: 'include',
+        })
+      })
+      .then(resp=>
+      {
+        this.inProgress = false;
+        if (resp.ok)
+        {
+          return resp.blob();
+        }
+        throw new 'export excel failed';
+      })
+      .then(blob=>
+      {
+        FileSaver.saveAs(blob, 'tasks.xlsx', true);
+      })
+      .catch(ex=>
+      {
+        this.inProgress = false;
+      });
+    },
     doSearch: function(cri)
     {
       const constraints = buildConstraints(cri);
@@ -679,31 +772,50 @@ export default {
       })
       .then(ids=>
       {
-        this.statusHint = "获取任务细节...";
+        const recursivePromise = (idList, allTasks)=>
+        {
+          if (idList.length == 0)
+          {
+            return allTasks;
+          }
+          const pace = 1;
+          const head = idList.slice(0, pace);
+          console.log(head.join(','));
+          const tail = idList.slice(pace);
+          return fetch('http://' + this.config.host + '/api/id2j?ids=' + head.join(','), {
+            credentials: 'include',
+          })
+          .then((resp)=>
+          {
+            return resp.json();
+          })
+          .then((tasks)=>
+          {
+            tasks.forEach(x => {allTasks.push(x);});
+            this.statusHint = `获取任务细节, 剩余${tail.length}个任务...`;
+            return recursivePromise(tail, allTasks);
+          });
+        };
+        const idList = ids.trim().split(',');
+        this.statusHint = `获取任务细节, 剩余${idList.length}个任务...`;;
+        this.tasks = [];
+        return recursivePromise(idList, this.tasks);
         return fetch('http://' + this.config.host + '/api/id2j?ids=' + ids.trim(), {
           credentials: 'include',
         });
-      })
-      .then(resp=>
-      {
-        if (resp.ok)
-        {
-          return resp.json();
-        }
-        this.statusHint = "";
-        this.inProgress = false;
-        throw new 'can not get search details';
       })
       .then(tasks=>
       {
         this.inProgress = false;
         this.tasks = tasks;
+        this.original_tasks == [...tasks];
         this.statusHint = `共计${tasks.length}个任务`;
       })
       .catch(ex => 
       {
         this.statusHint = "";
         this.inProgress = false;
+        console.log(ex);
       });
     },
     pop_settings: function()
@@ -713,6 +825,32 @@ export default {
     batch_add_task: function() 
     {
       this.batchCreatingTask = true;
+    },
+    export_excel: function()
+    {
+      const ids = this.tasks.map(x => x.tid).join(',');
+      this.inProgress = true;
+      fetch('http://' + this.config.host + '/api/t2x?ids=' + ids, {
+        credentials: 'include',
+      })
+      .then(resp=>
+      {
+        this.inProgress = false;
+        if (resp.ok)
+        {
+          return resp.blob();
+        }
+        throw new 'export excel failed';
+      })
+      .then(blob=>
+      {
+        FileSaver.saveAs(blob, 'tasks.xlsx', true);
+      })
+      .catch(ex=>
+      {
+        this.inProgress = false;
+      });
+
     },
     nextStep: function()
     {

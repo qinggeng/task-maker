@@ -33,6 +33,20 @@ const field_criteria_defines = (() => {
         display: '属于',
       };
     },
+    get not_later_than()
+    {
+      return {
+        key: 'not_later_than',
+        display: '不晚于',
+      };
+    },
+    get not_earlier_than()
+    {
+      return {
+        key: 'not_earlier_than',
+        display: '不早于',
+      };
+    },
   };
 
   let field_definition_full_text = (()=>
@@ -200,7 +214,6 @@ const field_criteria_defines = (() => {
       field_editors: field_editors,
     };
   })();
-
   let field_definition_author = (()=>{
     let field_editors = {};
     field_editors[predicts.belongs_to.key] =
@@ -300,6 +313,74 @@ const field_criteria_defines = (() => {
     };
   })();
 
+  let field_definition_modified = (()=>
+  {
+    let field_editors = {};
+    field_editors[predicts.not_later_than.key] = {
+      data_traits: {
+        edit_type: 'datetime',
+        editable: true,
+      },
+      apply_value: function(val)
+      {
+        return '';
+      }
+    };
+    field_editors[predicts.not_earlier_than.key] = {
+      data_traits: {
+        edit_type: 'datetime',
+        editable: true,
+      },
+      apply_value: function(val)
+      {
+        return '';
+      }
+    };
+    return {
+      name: 'modified',
+      display: '最后编辑时间',
+      available_predicts: [
+        predicts.not_later_than,
+        predicts.not_earlier_than,
+      ],
+      field_editors,
+    };
+  })();
+
+  let field_definition_created = (()=>
+  {
+    let field_editors = {};
+    field_editors[predicts.not_later_than.key] = {
+      data_traits: {
+        edit_type: 'datetime',
+        editable: true,
+      },
+      apply_value: function(val)
+      {
+        return '';
+      }
+    };
+    field_editors[predicts.not_earlier_than.key] = {
+      data_traits: {
+        edit_type: 'datetime',
+        editable: true,
+      },
+      apply_value: function(val)
+      {
+        return '';
+      }
+    };
+    return {
+      name: 'created',
+      display: '创建时间',
+      available_predicts: [
+        predicts.not_later_than,
+        predicts.not_earlier_than,
+      ],
+      field_editors,
+    };
+  })();
+
   const criteriaDefines = {
     predicts: predicts,
     fields: [
@@ -309,6 +390,8 @@ const field_criteria_defines = (() => {
       field_definition_author,
       field_definition_assigned,
       field_definition_status,
+      field_definition_modified,
+      field_definition_created,
     ],
   };
 

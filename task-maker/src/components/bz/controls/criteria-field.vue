@@ -31,6 +31,7 @@
 
 import DataEditor      from '@/components/bz/controls/data-editor'
 import CriteriaDefines from '@/consts/bz/criteria_defines.js'
+import utils           from '@/utils';
 
 const fieldTraits     = CriteriaDefines.fieldTraits;
 const criteriaDefines = CriteriaDefines.criteriaDefines;
