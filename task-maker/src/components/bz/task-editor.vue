@@ -305,78 +305,10 @@ import FileSaver       from 'file-saver';
 const config = store.state.config;
 let j2s = JSON.stringify;
 
-let parseTask = (tstr) => {
-  let terminals = /^(-+)\s*([^\s].*)$/;
-  let match = terminals.exec(tstr);
-  let indent = match[1].replace('\t', '  ');
-  let title = match[2];
-  return {
-    indent,
-    task           : title,
-    assigned       : '',
-    status         : 'Open',
-    priority       : 'Needs Triage',
-    severity       : '不是bug',
-    deadline       : '',
-    deadline_local : '',
-    deadline_date  : '',
-    deadline_time  : '',
-    tags           : [],
-    riskAssessment : '',
-    tid            : '',
-    points         : '',
-  };
-};
-
-let generateTasks = (tasks, stack, task) =>
-{
-  let subTasks = [];
-  while(tasks.length > 0)
-  {
-    let cachedTask = tasks[tasks.length - 1];
-    
-    if (cachedTask.indent.length <= task.indent.length)
-    {
-      break;
-    }
-    subTasks.push(cachedTask);
-    tasks.pop();
-  }
-  if (subTasks.length > 0)
-  {
-    task.subTasks = subTasks;
-  }
-  tasks.push(task);
-  if (stack.length === 0)
-  {
-    return tasks.reverse();
-  }
-  return generateTasks(tasks, stack.slice(0, -1), stack[Math.max(0, stack.length - 1)]);
-}
-
-
-let parseTasks = (tstr) => {
-  let lines = tstr.split('\n');
-  let stack = [];
-  for (const line of lines)
-  {
-    let task = parseTask(line);
-    stack.push(task);
-  }
-  let tasks = 
-    generateTasks(
-      [], 
-      stack.slice(0, -1), 
-      stack[Math.max(0, stack.length - 1)]);
-  return tasks;
-};
-
-
-
-
 import basic_styles     from '@/styles';
 import NewTaskDialog    from "@/components/bz/dialogs/new-tasks-wizard"
 import SearchEditDialog from "@/components/bz/dialogs/search_edit_dialog"
+import {parseTasks}     from "@/utils/task_parser"
 
 const buildConstraints = (criterias) => 
 {
